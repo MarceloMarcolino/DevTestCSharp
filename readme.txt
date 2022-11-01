@@ -6,11 +6,11 @@
 
 Requisites:
     
-    *This test must be done exclusivley on visual studio, do not use any engine.
+    *This test must be done exclusively on visual studio, do not use any engine.
 
-    * You also need the create a documentation with all the erros and code malpractices that you finded, rectifyed and refactored.
+    * You also need to create a documentation with all the errors and code malpractices that you found, rectified and refactored.
 
-    * Before you start changing the code, please use any git related tool (private repo or local repo) you prefere and send the repo link to us, or the .git folder so we can look through you changes. The account to give access is: dev@kokku.com.br
+    * Before you start changing the code, please use any git related tool (private repo or local repo) you prefer and send the repo link to us, or the .git folder so we can look through you changes. The account to give access is: dev@kokku.com.br
 
     This program needs to work with these rules:
     
@@ -22,7 +22,7 @@ Requisites:
         - Make sure all the variables in CHARACTER are engaged in a code feature.
         - The game should inform the player when the battle is over and which team has been declared victorious.
         - The battlefield should only be reprinted/redrawn if a player makes a move.
-        - Each character should look for a possible target and attack it when this is viable and if not, move closer into attack range.
+        - Each character should look for a possible target and attack it when it is viable, and if not, move closer into attack range.
         - Each candidate must also implement one of the following extra features in the application, to be selected depending on their month of birth.
 
         Please, document EVERY change you make on the code. Bear in mind we are going to look into how you're able to optimize, organize and refactor.
@@ -33,11 +33,11 @@ Requisites:
             3 - Consider any means to optimize the code, look out for bad performance and memory usage.
             4 - Feel free to modify or refactor anything, as long as you document it.
             5 - The code convention should be consistent, feel free to adjust any part that does not follow this rule.
-            6 - The game can't have arbitrary decisions,  example: a player always starts first.
+            6 - The game can't have arbitrary decisions, example: a player always starts first.
 
 
-        Each candidate must also implement one of the following extra features in the application, to be selected depending on their month of birth. Please when you deliver
-	your test, specify wich of the extra feature you implemented.
+        Each candidate must also implement one of the following extra features in the application, to be selected depending on their month of birth. Please, when you deliver
+	your test, specify which of the extra features you implemented.
         
         Extra Features:
         
