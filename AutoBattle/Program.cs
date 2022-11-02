@@ -1,324 +1,362 @@
 ﻿using System;
-using static AutoBattle.Character;
-using static AutoBattle.Grid;
 using System.Collections.Generic;
-using System.Linq;
 using static AutoBattle.Types;
-
+using static AutoBattle.UserInputs;
+using static AutoBattle.Utils;
 namespace AutoBattle
 {
+    /// <summary>
+    /// Class responsible for the core game logic
+    /// </summary>
     class Program
     {
+        #region References Declaration
+        // References to a PlayerCharacter and EnemyCharacter
+        public static Character PlayerCharacter;
+        public static Character EnemyCharacter;
+        // For Layout reasons, limiting the maximun amount of teams to be 4
+        public static int maxTeamCount = 5;
+        // References to all characters in game, all teams playing and the winner team
+        public static List<Character> AllPlayers = new List<Character>();
+        public static List<Team> AllTeams = new List<Team>();
+        public static Team winnerTeam = null;
+        #endregion
         static void Main(string[] args)
         {
-            Grid grid = new Grid(5, 5);
-            CharacterClass playerCharacterClass;
-            GridBox PlayerCurrentLocation;
-            GridBox EnemyCurrentLocation;
-            Character PlayerCharacter;
-            Character EnemyCharacter;
-            List<Character> AllPlayers = new List<Character>();
-            int currentTurn = 0;
-            int numberOfPossibleTiles = grid.grids.Count;
+            #region UserInput Gathering 
+            // New instance of the HUD class used to print out messages in this class
+            HUD hud = new HUD();
+            // Default attribution to some variables
+            int gridHeight = 5, gridWidth = 5, numberOfTeams = 2;
+            //Clearing the console and showing Welcoming messages
+            hud.ClearConsole();
+            hud.MessageFormatter("\n", "----------", " Welcome to the AutoBattle! ", "----------", "\n\n", "Here you must fight to the death...", "\n");
 
-            /*Makes the Player and Enemy appear at different random spots each playthrough */
-            Random rnd = new Random();
+            // Gathering information relevant to the grid size in height and width, and the number of teams from the user
+            GetUserInput("Let's summon a new battlefield! How large should it be? [2-8]\t", out gridWidth);
+            GetUserInput("How tall should the battlefield be? [2-8]\t", out gridHeight);
+            GetUserInputTeams("How many teams maximum, are in for the blood bath? [2-4]\t", gridHeight, gridWidth, out numberOfTeams);
 
-            Setup(); 
+            // Creating an instance of the grid Class.
+            Grid grid = new Grid(gridHeight, gridWidth);
 
+            // Character Factory instance instantiated.
+            CharacterFactory characterFactory = new CharacterFactory(grid);
+            #endregion
 
-            void Setup()
-            {
+            Setup();
 
-                GetPlayerChoice();
-                CreateEnemyCharacter();
-                StartGame();
-            }
+            #region GameLogic
 
+            void Setup() => GetPlayerChoice();
+
+            /// <summary>
+            /// First method in a chain that's going to run until the start turn where the game main thread is going to run
+            /// </summary>
             void GetPlayerChoice()
             {
-                string PlayerChoiceInput;
-                while (true) //Loop for the Player to choose a valid Class
+                // Asks the player to choose between for possible classes via console.
+                hud.MessageFormatter("Now, choose between one of the following Classes:", "\n", "[1] Paladin, [2] Warrior, [3] Cleric, [4] Archer", "\n");
+
+                // Store the player choice in a variable
+                string choice = Console.ReadLine();
+                // Parsing the player choice into an integer and then parsing it into a Character Class option
+                Int32 choiceValue = 0;
+                Int32.TryParse(choice, out choiceValue);
+                CharacterClass playersChosenClass = (CharacterClass)choiceValue;
+
+                //Depending on the class selected a new Player will be created, otherwise this method will be called recursively
+                switch (playersChosenClass)
                 {
-                    //asks for the player to choose between for possible classes via console.
-                    Console.WriteLine("Choose Between One of this Classes:\n");
-                    Console.WriteLine("[1] Paladin, [2] Warrior, [3] Cleric, [4] Archer");
-
-                    //store the player choice in a variable
-                    string choice = Console.ReadLine();
-
-                    /*Verifies if the Input is valid*/
-                    if (PlayerChoiceInput.Length() == 1
-                    {
-                        if (PlayerChoiceInput[0] == '1')
-                            || PlayerChoiceInput[0] == '2'
-                            || PlayerChoiceInput[0] == '3'
-                            || PlayerChoiceInput[0] == '4'
-                        {
-                            break;
-                        }
-                    }
-                }
-                int choiceValue = Int16.Parse(PlayerChoiceInput);
-
-                switch (choiceValue)
-                {
-                    case 1:
-                        CreatePlayerCharacter(choiceValue, 150, 30);
+                    case CharacterClass.Paladin:
+                        CreatePlayerCharacter(playersChosenClass);
                         break;
-                    case 2:
-                        CreatePlayerCharacter(choiceValue, 100, 40);
+                    case CharacterClass.Warrior:
+                        CreatePlayerCharacter(playersChosenClass);
                         break;
-                    case 3:
-                        CreatePlayerCharacter(choiceValue, 200, 20);
+                    case CharacterClass.Cleric:
+                        CreatePlayerCharacter(playersChosenClass);
                         break;
-                    case 4:
-                        CreatePlayerCharacter(choiceValue, 50, 80);
+                    case CharacterClass.Archer:
+                        CreatePlayerCharacter(playersChosenClass);
                         break;
                     default:
+                        GetPlayerChoice();
                         break;
                 }
             }
 
-            void CreatePlayerCharacter(int classIndex, int classEnergy, int classPower)
+
+            /// <summary>
+            /// Given the player choice inputed a new Player class will be created by the factory and the Method 'CreateEnemyCharacter' will be called creating enemies. The next method on the chain called is the StartGame method.
+            /// </summary>
+            /// <param name="choice">ChacaterClass typed input</param>
+            void CreatePlayerCharacter(CharacterClass choice)
             {
-               
-                CharacterClass characterClass = (CharacterClass)classIndex;
+                // A Character is created and added to the list of all players
+                PlayerCharacter = characterFactory.CreatePlayer(choice);
+                AllPlayers.Add(PlayerCharacter);
+                hud.MessageFormatter($"{PlayerCharacter.Name} has entered the game!\n\n");
 
-                switch (classIndex)
+                // Creation of random enemies to be added to the battlefield. If the battlefield dimesion is too small, it should prevent the system from creating too many enemies. Max of enemies 5
+                bool isGridSizeIsSmallerThan3x3 = gridHeight * gridWidth > 9;
+                // Given the number of teams set by the player, the enemies count should be proportional to a parcel of the grid
+                int enemiesForSmallGrids = maxTeamCount + (int)(gridHeight + gridWidth) / 4;
+                // The maximum number of enemies is the grid dimension with a gap so they can move in need
+                int enemiesForBiggerGrids = gridHeight * gridWidth - 2;
+
+                //The number of enemies is given and Enemies are created up to that amount
+                int maximumNumberOfEnemies = isGridSizeIsSmallerThan3x3 ? enemiesForSmallGrids : enemiesForBiggerGrids;
+
+                int maxEnemiesCount = GetRandomInt(numberOfTeams - 1, maximumNumberOfEnemies);
+                for (var i = 0; i < maxEnemiesCount; i++)
                 {
-                    case 1:
-                        Console.WriteLine("Player Class Choice: Paladin\n");
-                        break;
-                    case 2:
-                        Console.WriteLine("Player Class Choice: Warrior\n");
-                        break;
-                    case 3:
-                        Console.WriteLine("Player Class Choice: Cleric\n");
-                        break;
-                    case 4:
-                        Console.WriteLine("Player Class Choice: Archer\n");
-                        break;
+                    CreateEnemyCharacter();
                 }
-                PlayerCharacter = new Character(characterClass);
 
-                PlayerCharacter.Health = classEnergy;
-                PlayerCharacter.BaseDamage = classPower;
-                PlayerCharacter.DamageMultiplier = 1;
-                PlayerCharacter.PlayerIndex = 0;
-                /*
-                Console.WriteLine($"Player Class Choice: {characterClass}");
-                PlayerCharacter = new Character(characterClass);
-                PlayerCharacter.Health = 100;
-                PlayerCharacter.BaseDamage = 20;
-                PlayerCharacter.PlayerIndex = 0;
-                CreateEnemyCharacter();
-                */
-
-            }
-
-            void CreateEnemyCharacter()
-            {
-                //randomly choose the enemy class and set up vital variables
-                var rand = new Random();
-                int randomInteger = rand.Next(1, 4);
-                int classEnergy;
-                int classPower;
-
-                CharacterClass enemyClass = (CharacterClass)randomInteger;
-                
-                switch (randomInteger)
-                {
-                    case 1:
-                        Console.WriteLine("Enemy Class Choice: Paladin\n");
-                        classEnergy = 150;
-                        classPower = 30;
-                        break;
-                    case 2:
-                        Console.WriteLine("Enemy Class Choice: Warrior\n");
-                        classEnergy = 100;
-                        classPower = 40;
-                        break;
-                    case 3:
-                        Console.WriteLine("Enemy Class Choice: Cleric\n");
-                        classEnergy = 200;
-                        classPower = 20;
-                        break;
-                    case 4:
-                        Console.WriteLine("Enemy Class Choice: Archer\n");
-                        classEnergy = 50;
-                        classPower = 80;
-                        break;
-                }
-                EnemyCharacter = new Character(enemyClass);
-
-                EnemyCharacter.Health = classEnergy;
-                EnemyCharacter.BaseDamage = classPower;
-                EnemyCharacter.DamageMultiplier = 1;
-                EnemyCharacter.PlayerIndex = 1;
-
-                /*
-                Console.WriteLine($"Enemy Class Choice: {enemyClass}");
-                EnemyCharacter = new Character(enemyClass);
-                EnemyCharacter.Health = 100;
-                PlayerCharacter.BaseDamage = 20;
-                PlayerCharacter.PlayerIndex = 1;
                 StartGame();
-                */
-
             }
 
+            /// <summary>
+            /// This method allocates the characters within the grid, set them up into different teams and gives all characters a default target. Also, it's responsible for the first render of the battlefield. The next method in the chain is 'StartTurn'.
+            /// </summary>
             void StartGame()
             {
-                //populates the character variables and targets
-                EnemyCharacter.Target = PlayerCharacter;
-                PlayerCharacter.Target = EnemyCharacter;
+                AllocatePlayers();
+                SetUpTeams();
+                SetTargets();
 
-                //Place Players on Battlefield
-                AlocatePlayers();
-
-                AllPlayers.Add(PlayerCharacter);
-                AllPlayers.Add(EnemyCharacter);
-
-                grid.drawBattlefield(5, 5);
+                //Snapshot of the beggining battlefield
+                grid.DrawBattlefield(gridHeight, gridWidth);
+                hud.ReadKeyboardInput("\nAll set for battle... Brace yourselves!\nPress any key to continue...");
 
                 StartTurn();
 
             }
 
-            void StartTurn(){
-
-                currentTurn++;
-
-                bool bIsPlayerTurn = true;
-
-                Console.Write("\n----------------------------------------------------------------------------------------\n");
-                Console.WriteLine($"Start of the turn {currentTurn}\n\n");
-                Console.WriteLine($"Player Health: {PlayerCharacter.Health} \n");
-                Console.WriteLine($"Player Character Current Box: Line: {PlayerCharacter.currentBox.xIndex} Column: {PlayerCharacter.currentBox.yIndex} \n\n");
-
-                Console.WriteLine($"Enemy Health: {EnemyCharacter.Health} \n");
-                Console.WriteLine($"Enemy Character Current Box: Line: {EnemyCharacter.currentBox.xIndex} Column: {EnemyCharacter.currentBox.yIndex} \n\n");
-
-                /*
-                if (currentTurn == 0)
+            /// <summary>
+            /// 
+            /// </summary>
+            void SetTargets()
+            {
+                AllPlayers.ForEach(player =>
                 {
-                    //AllPlayers.Sort();  
-                }
-                */
+                    Character target = AllPlayers[GetRandomInt(0, AllPlayers.Count)];
 
-                foreach(Character character in AllPlayers)
-                {
-                    character.StartTurn(grid, bIsPlayerTurn);
-                    bIsPlayerTurn = false;
-                }
+                    while (player.Target == null)
+                    {
+                        if (target.PlayerIndex != player.PlayerIndex && target.TeamIndex != player.TeamIndex)
+                        {
+                            player.Target = target;
+                        }
+                        target = AllPlayers[GetRandomInt(0, AllPlayers.Count)];
+                    }
 
-
-                Console.WriteLine($"Player Health: {PlayerCharacter.Health} \n");
-                Console.WriteLine($"Player Character Current Box: Line: {PlayerCharacter.currentBox.xIndex} Column: {PlayerCharacter.currentBox.yIndex} \n\n");
-
-                Console.WriteLine($"Enemy Health: {EnemyCharacter.Health} \n");
-                Console.WriteLine($"Enemy Character Current Box: Line: {EnemyCharacter.currentBox.xIndex} Column: {EnemyCharacter.currentBox.yIndex} \n\n");
-
-                Console.WriteLine($"End of the turn {currentTurn}\n\n");
-                Console.Write("\n----------------------------------------------------------------------------------------\n");
-
-                //currentTurn++;
-                HandleTurn();
+                });
             }
 
-            void HandleTurn()
+            /// <summary>
+            /// Method responsible for creating all the teams in the game. Each new team is added to the list of all teams and after that the players are allocated into teams
+            /// </summary>
+            void SetUpTeams()
             {
-                if(PlayerCharacter.Health == 0)
+                for (var i = 0; i < numberOfTeams; i++)
                 {
-                    Console.WriteLine("\n--------------------------------GAME OVER----------------------------------\n");
-                    Console.WriteLine("-----------------------------The player LOSES...-----------------------------\n");
-                } 
-                else if (EnemyCharacter.Health == 0)
+                    AllTeams.Add(new Team($"Team {i + 1}", i));
+                }
+                hud.MessageFormatter($"{AllTeams.Count} teams have been created\n\n");
+                AlocatePlayersInTeams();
+                hud.ReadKeyboardInput("Press any key to continue...");
+            }
+
+            /// <summary>
+            /// Method responsible for distributing randomly all the characters into teams
+            /// </summary>
+            void AlocatePlayersInTeams()
+            {
+                //Definition of all the variables used in this method
+                List<Character> copyPlayers = new List<Character>(AllPlayers);
+                int randomPlayerIdex = 0;
+                int allTeamsIndexer = 0;
+                Character currentCharacter = null;
+                Team currentTeam = null;
+
+                // A copy of the AllPlayers list is created and its looped through whilst there are elements in it
+                while (copyPlayers.Count > 0)
                 {
-                    Console.WriteLine("\n--------------------------------GAME OVER----------------------------------\n");
-                    Console.WriteLine("-----------------------------The player WINS...-----------------------------\n");
-                    
-                    /*
-                    Console.Write(Environment.NewLine + Environment.NewLine);
+                    //A random element of the AllPlayers copy list is selected and its index is cached. Then, the character is set to currentCharacter as a reference
+                    randomPlayerIdex = GetRandomInt(0, copyPlayers.Count);
+                    currentCharacter = copyPlayers[randomPlayerIdex];
 
-                    // endgame?
+                    //Looping through all positions of the AllTeams list, so no team is left empty, and adding the random player selected to said team. 'allTeamsIndexer' will do as a threshold on the iteration. 
+                    currentTeam = AllTeams[allTeamsIndexer];
 
-                    Console.Write(Environment.NewLine + Environment.NewLine);
+                    //The current character is added to members and its TeamIndex is set to be the allTeamsIndexer
+                    currentTeam.AddMember(currentCharacter);
+                    currentCharacter.TeamIndex = allTeamsIndexer;
+                    //Removing the player already sorted into a team from the outer loop - 'while condition' and increasing the threshold 'allTeamsIndexer'
+                    copyPlayers.RemoveAt(randomPlayerIdex);
+                    allTeamsIndexer++;
 
-                    return;
-                    */
-                } 
+                    //Once all teams are visited its indexer is reset so the remaining players can be once more alocated
+                    if (allTeamsIndexer == AllTeams.Count)
+                    {
+                        allTeamsIndexer = 0;
+                    }
+                }
+                //Printing a resume of all teams
+                Team.PrintAllTeams();
+            }
+
+            /// <summary>
+            /// The Character Factory creates a new Random Character and it is added to the list of all players
+            /// </summary>
+            void CreateEnemyCharacter()
+            {
+                EnemyCharacter = characterFactory.Create();
+                AllPlayers.Add(EnemyCharacter);
+            }
+
+            /// <summary>
+            /// Key method. It's responsible for setting the conditions to make each team have a new turn, selecting a different character as the actor of its turn
+            /// </summary>
+            void StartTurn()
+            {
+                //All variables used in this method
+                int teamsCount = 0;
+                Team currentTeam = null;
+
+                int indexer = 0, playersCount = AllPlayers.Count;
+
+                //While there isn't a winnerTeam, this method will run
+                while ((winnerTeam == null))
+                {
+                    //The game checks for a winner before a new turn is started
+                    CheckForWinner();
+
+                    //All the teams are going to be run through. The first team will have its turn, then the next team, and so on.
+                    ///E.g:             ↓ = indexer      
+                    ///  i →   team 0 [[0] [1] [2]    ]
+                    ///        team 1 [[0] [1]        ]
+                    ///        team 2 [[0] [1] [2] [3]]
+                    /// 
+                    for (int i = 0; i < AllTeams.Count; i++)
+                    {
+                        //Another check for winners before starting the teams' new turn
+                        CheckForWinner();
+                        //A text area below the grid is cleared for new information
+                        hud.ClearTextArea(0, gridHeight + 8);
+
+                        //Reference to the current team selected by the for loop 
+                        currentTeam = AllTeams[i];
+                        if (indexer < currentTeam.Count())
+                        {
+                            //A new character is selected on the turns current Team
+                            Character ch = currentTeam.GetMemeberAt(indexer);
+
+                            hud.TextFormatter(gridHeight + 8, $"the champion selected for this turn is:");
+                            hud.ConsoleForeground(currentTeam.TeamColour);
+                            hud.TextFormatter(gridHeight + 8, $" {currentTeam.Name}'s {ch.Name} - positioned on ({ch.currentBox.position.ToString()})");
+                            hud.ResetForeground();
+                            // If the reference is null, it means there are no characters on that position left on the team
+                            if (ch != null)
+                            {
+                                //The character will have its turn
+                                hud.ReadKeyboardInput($"\nIt's the beginning of {currentTeam.Name}'s new turn...\n");
+                                ch.StartTurn();
+                            }
+                        }
+
+                    }
+                    //If the indexer is greater than the teamsCount it means that all the elements on all teams have been met
+                    if (indexer > teamsCount)
+                        indexer = 0;
+                    else
+                        indexer++;
+                }
+
+            }
+
+            /// <summary>
+            /// This method is responsible for looking for winners and stopping the game once a winner is found
+            /// </summary>
+            void CheckForWinner()
+            {
+                if (AllTeams.Count > 1) return;
+                winnerTeam = AllTeams[0];
+                hud.TextFormatter(gridHeight + 8, $"\nWOW! The {AllTeams[0].Name} was the great winner!\n");
+                hud.ReadKeyboardInput("Thank you for running this playful experience. See you next time");
+                System.Environment.Exit(1);
+
+            }
+
+            /// <summary>
+            /// A new chain of methods that will allocate all the players within the grid
+            /// </summary>
+            void AllocatePlayers()
+            {
+                AllocatePlayerCharacter();
+            }
+
+            /// <summary>
+            /// This method will look for a random position in the grid and place the player there. Next method on the chain is 'AllocateEnemyCharacter'
+            /// </summary>
+            void AllocatePlayerCharacter()
+            {
+                //Getting a random index from 0 - the grid size
+                int random = PlayerCharacter.PlayerIndex;
+
+                //Getting a reference to the location found
+                GridBox RandomLocation = grid.GetElementAt(random);
+                GridBox PlayerCurrentLocation;
+
+                //If the position found is occupied, run this method once more
+                if (!RandomLocation.isOccupied)
+                {
+                    //The reference to the currentLocation is set
+                    PlayerCurrentLocation = RandomLocation;
+                    PlayerCurrentLocation.isOccupied = true;
+                    //The player character reference's current box is set to this new random location
+                    PlayerCharacter.currentBox = RandomLocation;
+                    //The grid position is set to the random location selected
+                    grid.SetElementAt(random, PlayerCurrentLocation);
+                    //Time to allocate the enemy
+                    AllocateEnemyCharacter();
+                }
                 else
-                {
-                    Console.Write(Environment.NewLine + Environment.NewLine);
-                    Console.WriteLine("Press Enter to start the next turn\n");
-                    Console.Write(Environment.NewLine + Environment.NewLine);
-
-                    ConsoleKeyInfo key = Console.ReadKey();
-                    StartTurn();
-                }
+                    AllocatePlayerCharacter();
             }
-
-            int GetRandomInt(int min, int max)
+            /// <summary>
+            /// Method responsible for allocating the All the other characters in the grid
+            /// </summary>
+            void AllocateEnemyCharacter()
             {
-                var rand = new Random();
-                //int index = rand.Next(min, max);
-                int index = rand.Next() % max + min;
-                return index;
-            }
-
-            void AlocatePlayers()
-            {
-                AlocatePlayerCharacter();
-                AlocateEnemyCharacter();
-            }
-
-            void AlocatePlayerCharacter()
-            {
-                int random = GetRandomInt(0, ((grid.xLenght * grid.yLength) - 1));
-                //int random = 0;
-                GridBox RandomLocation = (grid.grids.ElementAt(random));
-                Console.Write($"{random}\n");
-                if (!RandomLocation.ocupied)
+                //Looping through all players
+                for (int i = 0; i < AllPlayers.Count; i++)
                 {
-                    GridBox PlayerCurrentLocation = RandomLocation;
-                    RandomLocation.ocupied = true;
-                    grid.grids[random] = RandomLocation;
-                    PlayerCharacter.currentBox = grid.grids[random];
-                    Console.WriteLine($"Player Character Current Box: Line: {PlayerCharacter.currentBox.xIndex} Column: {PlayerCharacter.currentBox.yIndex} \n");
-                    grid.PlayerCurrentLocation = PlayerCurrentLocation;
-                }
-                else
-                {
-                    AlocatePlayerCharacter();
+                    //Getting the enemies, skipping the player that has already been allocated
+                    if (AllPlayers[i].PlayerIndex != PlayerCharacter.PlayerIndex)
+                    {
+                        //Getting a reference to the current enemy
+                        Character enemy = AllPlayers[i];
+                        //Reference to the current enemy's player index
+                        int enemyIndex = enemy.PlayerIndex;
+
+                        //Finding the Gridbox given the current enemy's index - The position he is supposed to be at.
+                        GridBox RandomLocation = grid.GetElementAt(enemyIndex);
+
+                        //Once the enemy is not in the grid of occupied and the gridbox to be is empty we set the enemy's currentbox to be occupied and equals to the random location selected
+                        if (!RandomLocation.isOccupied)
+                        {
+                            enemy.currentBox = RandomLocation;
+                            enemy.currentBox.isOccupied = true;
+                            //Updating the list of gridboxes with the newly updated box
+                            grid.SetElementAt(enemyIndex, enemy.currentBox);
+                        }
+                    }
                 }
             }
-
-            void AlocateEnemyCharacter()
-            {
-                int random = GetRandomInt(0, ((grid.xLenght * grid.yLength) - 1));
-                //int random = 24;
-                GridBox RandomLocation = (grid.grids.ElementAt(random));
-                Console.Write($"{random}\n");
-                if (!RandomLocation.ocupied)
-                {
-                    EnemyCurrentLocation = RandomLocation;
-                    RandomLocation.ocupied = true;
-                    grid.grids[random] = RandomLocation;
-                    EnemyCharacter.currentBox = grid.grids[random];
-                    Console.WriteLine($"Enemy Character Current Box: Line: {EnemyCharacter.currentBox.xIndex} Column: {EnemyCharacter.currentBox.yIndex} \n");
-                    //grid.drawBattlefield(5 , 5);
-                    grid.EnemyCurrentLocation = EnemyCurrentLocation;
-                }
-                else
-                {
-                    AlocateEnemyCharacter();
-                }
-
-                
-            }
-
+            #endregion
         }
     }
 }
