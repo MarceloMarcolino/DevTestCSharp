@@ -22,7 +22,7 @@ namespace AutoBattle
             }
             catch
             {
-                Console.WriteLine("Not a valid dimension for this battlefield! I cannot summon it...\n");
+                Console.WriteLine("This isn't a valid dimension for this battlefield! Please input other values for it...\n");
             }
             return parsedInputCell;
         }

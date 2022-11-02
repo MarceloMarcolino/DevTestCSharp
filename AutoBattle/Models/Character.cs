@@ -40,18 +40,18 @@ namespace AutoBattle
             {
                 case CharacterClass.Paladin:
                     DamageMultiplier = 2;
-                    ClassSpecific.skills = new CharacterSkills[] { new CharacterSkills("Long Sword", 10, 10) };
+                    ClassSpecific.skills = new CharacterSkills[] { new CharacterSkills("Divine Smite", 10, 10) };
                     BaseDamage *= (DamageMultiplier + ClassSpecific.classDamage);
                     break;
                 case CharacterClass.Warrior:
-                    DamageMultiplier = 5;
-                    ClassSpecific.skills = new CharacterSkills[] { new CharacterSkills("Super speed arrow drawing", 12, 2) };
-                    BaseDamage *= DamageMultiplier + ClassSpecific.skills[0].damageMultiplier;
-                    break;
-                case CharacterClass.Archer:
                     DamageMultiplier = 3;
                     BaseDamage *= DamageMultiplier;
-                    ClassSpecific.skills = new CharacterSkills[] { new CharacterSkills("Inquisition Attack", 5, 10) };
+                    ClassSpecific.skills = new CharacterSkills[] { new CharacterSkills("Ogre Cutter", 5, 10) };
+                    break;
+                case CharacterClass.Archer:
+                    DamageMultiplier = 5;
+                    ClassSpecific.skills = new CharacterSkills[] { new CharacterSkills("Firebird Star", 12, 2) };
+                    BaseDamage *= DamageMultiplier + ClassSpecific.skills[0].damageMultiplier;
 
                     break;
                 case CharacterClass.Cleric:
@@ -59,7 +59,7 @@ namespace AutoBattle
                     ClassSpecific.hpModifier = 20;
                     Health += ClassSpecific.hpModifier;
                     DamageMultiplier = 2;
-                    ClassSpecific.skills = new CharacterSkills[] { new CharacterSkills("Inquisition Attack", 5, 10) };
+                    ClassSpecific.skills = new CharacterSkills[] { new CharacterSkills("Holy Justice", 5, 10) };
                     BaseDamage *= DamageMultiplier;
                     break;
                 default:
@@ -152,7 +152,7 @@ namespace AutoBattle
             _hud.MessageFormatter($"{Name} has now to choose...\n");
             if (CheckCloseTargets(_battlefield))
             {
-                _hud.MessageFormatter($"Tan tan tan nanan... ♫♩♪ It's battle time!\n");
+                _hud.MessageFormatter($"Heaven or Hell...Let's rock!\n");
                 Attack(Target);
             }
             //Otherwise he moves closer to his target

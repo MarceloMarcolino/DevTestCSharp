@@ -30,12 +30,12 @@ namespace AutoBattle
             int gridHeight = 5, gridWidth = 5, numberOfTeams = 2;
             //Clearing the console and showing Welcoming messages
             hud.ClearConsole();
-            hud.MessageFormatter("\n", "----------", " Welcome to the AutoBattle! ", "----------", "\n\n", "Here you must fight to the death...", "\n");
+            hud.MessageFormatter("\n", "------------", " Prepare for AutoBattle! ", "------------", "\n\n", "A Turn RPG System that works automatically...", "\n");
 
             // Gathering information relevant to the grid size in height and width, and the number of teams from the user
-            GetUserInput("Let's summon a new battlefield! How large should it be? [2-8]\t", out gridWidth);
-            GetUserInput("How tall should the battlefield be? [2-8]\t", out gridHeight);
-            GetUserInputTeams("How many teams maximum, are in for the blood bath? [2-4]\t", gridHeight, gridWidth, out numberOfTeams);
+            GetUserInput("Start by making the battlefield! How large should it be? [2-8]\t", out gridWidth);
+            GetUserInput("What about the battlefield's height? [2-8]\t", out gridHeight);
+            GetUserInputTeams("How many teams will take part in it? [2-4]\t", gridHeight, gridWidth, out numberOfTeams);
 
             // Creating an instance of the grid Class.
             Grid grid = new Grid(gridHeight, gridWidth);
@@ -128,7 +128,7 @@ namespace AutoBattle
 
                 //Snapshot of the beggining battlefield
                 grid.DrawBattlefield(gridHeight, gridWidth);
-                hud.ReadKeyboardInput("\nAll set for battle... Brace yourselves!\nPress any key to continue...");
+                hud.ReadKeyboardInput("\nNow... Let's get ready to rumble!\nPress any key to continue...");
 
                 StartTurn();
 
@@ -254,7 +254,7 @@ namespace AutoBattle
                             //A new character is selected on the turns current Team
                             Character ch = currentTeam.GetMemeberAt(indexer);
 
-                            hud.TextFormatter(gridHeight + 8, $"the champion selected for this turn is:");
+                            hud.TextFormatter(gridHeight + 8, $"the participant selected for this turn is:");
                             hud.ConsoleForeground(currentTeam.TeamColour);
                             hud.TextFormatter(gridHeight + 8, $" {currentTeam.Name}'s {ch.Name} - positioned on ({ch.currentBox.position.ToString()})");
                             hud.ResetForeground();
@@ -285,7 +285,7 @@ namespace AutoBattle
                 if (AllTeams.Count > 1) return;
                 winnerTeam = AllTeams[0];
                 hud.TextFormatter(gridHeight + 8, $"\nWOW! The {AllTeams[0].Name} was the great winner!\n");
-                hud.ReadKeyboardInput("Thank you for running this playful experience. See you next time");
+                hud.ReadKeyboardInput("Thank you for playing!");
                 System.Environment.Exit(1);
 
             }

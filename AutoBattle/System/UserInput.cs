@@ -24,7 +24,7 @@ namespace AutoBattle
             //Constraining the matrix size to not allow an unitary matrix or a matrix bigger than the max Side value. Keeps showing the message until a valid input
             if (userInputNumeric <= 1 || userInputNumeric > Grid.maxSide)
                 GetUserInput(
-                    _hud.MessageFormatterContains(outputMessage, "I apologize, I cannot use this value. ", false),
+                    _hud.MessageFormatterContains(outputMessage, "Sorry, but this value is unacceptable. ", false),
                     out output
                 );
 
@@ -49,7 +49,7 @@ namespace AutoBattle
             if (userInputNumeric < 2)
             {
                 GetUserInputTeams(
-                   _hud.MessageFormatterContains(outputMessage, "I apologize, I cannot use this value. How shall they fight like that? They are not frieds... They must battle! ", false),
+                   _hud.MessageFormatterContains(outputMessage, "Sorry, but this value is unacceptable. It takes, at least, two teams to battle! ", false),
                    height,
                    width,
                    out output
@@ -60,7 +60,7 @@ namespace AutoBattle
             else if (height * width < 9 && userInputNumeric >= 3)
             {
                 GetUserInputTeams(
-                    _hud.MessageFormatterContains(outputMessage, "I apologize, I cannot use this value. The battlefield is too small for that many people. ", false),
+                    _hud.MessageFormatterContains(outputMessage, "Sorry, but this value is unacceptable. A larger battlefield is required. ", false),
                     height,
                     width,
                     out output
@@ -70,7 +70,7 @@ namespace AutoBattle
             //Constraining the user team input to be smaller than 5 teams 
             else if (userInputNumeric <= 1 || userInputNumeric > Program.maxTeamCount - 1)
                 GetUserInputTeams(
-                    _hud.MessageFormatterContains(outputMessage, "I apologize, I cannot use this value. ", false),
+                    _hud.MessageFormatterContains(outputMessage, "Sorry, but this value is unacceptable. ", false),
                     height,
                     width,
                     out output
