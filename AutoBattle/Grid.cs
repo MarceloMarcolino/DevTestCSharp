@@ -11,6 +11,9 @@ namespace AutoBattle
         public List<GridBox> grids = new List<GridBox>();
         public int xLenght;
         public int yLength;
+
+        public Types.GridBox PlayerCurrentLocation;
+        public Types.GridBox EnemyCurrentLocation;
         public Grid(int Lines, int Columns)
         {
             xLenght = Lines;
@@ -18,10 +21,10 @@ namespace AutoBattle
             Console.WriteLine("The battle field has been created\n");
             for (int i = 0; i < Lines; i++)
             {
-                    grids.Add(newBox);
                 for(int j = 0; j < Columns; j++)
                 {
                     GridBox newBox = new GridBox(j, i, false, (Columns * i + j));
+                    grids.Add(newBox);
                     Console.Write($"{newBox.Index}\n");
                 }
             }
@@ -35,10 +38,31 @@ namespace AutoBattle
                 for (int j = 0; j < Columns; j++)
                 {
                     GridBox currentgrid = new GridBox();
+                    currentgrid.xIndex = i;
+                    currentgrid.yIndex = j;
+
+                    bool bOccupiedByPlayer = false;
+
+                    if (currentgrid.xIndex == PlayerCurrentLocation.xIndex && currentgrid.yIndex == PlayerCurrentLocation.yIndex)
+                    {
+                        currentgrid.ocupied = true;
+                        bOccupiedByPlayer = true;
+                    }
+                    else if (currentgrid.xIndex == EnemyCurrentLocation.xIndex && currentgrid.yIndex == EnemyCurrentLocation.yIndex)
+                    {
+                        currentgrid.ocupied = false;
+                    }
+
                     if (currentgrid.ocupied)
                     {
-                        //if()
-                        Console.Write("[X]\t");
+                        if (bOccupiedByPlayer)
+                        {
+                            Console.Write("[P]\t");
+                        }
+                        else
+                        {
+                            Console.Write("[E]\t");
+                        }
                     }
                     else
                     {

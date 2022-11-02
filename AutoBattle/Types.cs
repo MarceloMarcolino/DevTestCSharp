@@ -20,7 +20,7 @@ namespace AutoBattle
         {
             public int xIndex;
             public int yIndex;
-            public bool ocupied;
+            public bool ocupied = false;
             public int Index;
 
             public GridBox(int x, int y, bool ocupied, int index)
